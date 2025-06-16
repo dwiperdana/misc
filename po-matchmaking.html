@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Matchmaking Framework</title>
+    <!-- Chosen Palette: Calm Harmony (Warm Neutrals: Stone, Amber, Terracotta) -->
+    <!-- Application Structure Plan: A tabbed single-page application with a persistent side navigation. The structure is task-oriented, allowing users to explore distinct components of the framework: 1. Overview (introduction), 2. PO Capability Explorer (interactive cards for each of the 6 core skills), 3. Survey Sandbox (a dynamic tool to select and view the 4 different surveys), 4. Team Communication Guide, and 5. Recommendations. This modular, interactive structure was chosen over a linear document format to make the dense report more digestible and engaging. It encourages exploration and direct comparison of the different survey instruments, which is a core part of the source material. -->
+    <!-- Visualization & Content Choices: 1. PO Capabilities (Table 1) -> Goal: Compare -> Viz: Interactive Radar Chart (Chart.js) & expanding info cards. Interaction: Select a 'PO Profile' to update the chart, click cards for details. Justification: Radar chart provides an instant visual profile of PO strengths. Cards allow deep-dives without cluttering the UI. 2. Survey Tables (Tables 3-8) -> Goal: Inform/Interact -> Viz: "Survey Sandbox" UI with dropdown. Interaction: Select a survey to dynamically render its questions as styled cards. Justification: Transforms static tables into a usable tool, allowing easy comparison between survey versions. 3. Textual Content (Summaries, Recommendations) -> Goal: Inform -> Viz: Styled text blocks with clear headings. Interaction: None. Justification: Simple, clear presentation for narrative content. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .nav-item { transition: all 0.2s ease-in-out; }
+        .nav-item.active { background-color: #FBCFE8; color: #831843; }
+        .nav-item:not(.active):hover { background-color: #FCE7F3; color: #9D174D; }
+        .capability-card { transition: all 0.3s ease-in-out; }
+        .capability-card .details { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .capability-card.open .details { max-height: 500px; }
+        .chart-container { position: relative; width: 100%; max-width: 500px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .question-card-enter { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-pink-50 text-slate-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <nav id="sidebar" class="w-full md:w-64 bg-white/80 backdrop-blur-sm shadow-lg md:shadow-xl p-4 md:p-6 flex-shrink-0">
+            <h1 class="text-2xl font-bold text-pink-900 mb-8">Matchmaking OS</h1>
+            <ul class="space-y-2">
+                <li><a href="#overview" class="nav-item flex items-center p-3 rounded-lg font-medium text-slate-700"><span>🏠</span><span class="ml-3">Overview</span></a></li>
+                <li><a href="#capabilities" class="nav-item flex items-center p-3 rounded-lg font-medium text-slate-700"><span>🧩</span><span class="ml-3">PO Capabilities</span></a></li>
+                <li><a href="#surveys" class="nav-item flex items-center p-3 rounded-lg font-medium text-slate-700"><span>📝</span><span class="ml-3">Survey Sandbox</span></a></li>
+                <li><a href="#communication" class="nav-item flex items-center p-3 rounded-lg font-medium text-slate-700"><span>📢</span><span class="ml-3">Team Communication</span></a></li>
+                <li><a href="#recommendations" class="nav-item flex items-center p-3 rounded-lg font-medium text-slate-700"><span>💡</span><span class="ml-3">Recommendations</span></a></li>
+            </ul>
+        </nav>
+
+        <main id="main-content" class="flex-1 p-6 md:p-10 overflow-y-auto">
+            <section id="overview" class="content-section">
+                <h2 class="text-4xl font-bold text-pink-900/80 mb-4">Strategic Matchmaking Framework</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">This application translates the PO & Team Matchmaking report into an interactive experience. Explore the core capabilities, build and view different surveys, and understand the strategic recommendations for creating passionate, high-performing game development teams.</p>
+                
+                <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200/80">
+                    <h3 class="text-2xl font-semibold text-slate-800 mb-3">Executive Summary</h3>
+                    <p class="text-slate-600 mb-6">This framework assesses Product Owner (PO) capabilities and preferences to optimize team-project alignment within a work-for-hire game development studio. By using structured assessments and preference criteria, this data-driven "matchmaking" process enhances product-market fit, improves financial projections, and fosters high-performing teams. The goal is to improve project success, increase team motivation, and drive sustained organizational growth.</p>
+                    <h3 class="text-2xl font-semibold text-slate-800 mb-3">The Imperative of Alignment</h3>
+                    <p class="text-slate-600">In a dynamic work-for-hire environment, the Product Owner is pivotal. Effective PO-project alignment is a strategic imperative for project success, client satisfaction, and talent retention. This application provides a methodology for "matchmaking" POs and team members with project pipelines based on capabilities, preferences, and potential for strong team dynamics, helping to simulate an ideal organizational structure.</p>
+                </div>
+            </section>
+
+            <section id="capabilities" class="content-section hidden">
+                 <h2 class="text-4xl font-bold text-pink-900/80 mb-4">Product Owner Capability Explorer</h2>
+                 <p class="text-lg text-slate-600 mb-8 max-w-4xl">This section provides an interactive view of the core capabilities required for a successful Product Owner in game development. Analyze a PO's strengths with the radar chart and click on each capability card below to explore what "Good" and "Bad" performance looks like.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-slate-200/80">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-4">Capability Profile</h3>
+                         <div class="mb-4">
+                            <label for="poProfileSelector" class="block text-sm font-medium text-gray-700 mb-1">Select a PO Archetype:</label>
+                            <select id="poProfileSelector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500">
+                                <option value="balanced">Balanced PO</option>
+                                <option value="strategic">Strategic Visionary</option>
+                                <option value="execution">Execution Expert</option>
+                                <option value="people">People Leader</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="capabilitiesChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="capabilities-list" class="lg:col-span-3 space-y-4">
+                    </div>
+                </div>
+            </section>
+
+            <section id="surveys" class="content-section hidden">
+                <h2 class="text-4xl font-bold text-pink-900/80 mb-4">Survey Sandbox</h2>
+                <p class="text-lg text-slate-600 mb-8 max-w-4xl">Interactively build and review the different surveys designed for the matchmaking process. Select a survey type from the dropdown to see its specific questions and formats. This tool helps visualize how data on capabilities and preferences is gathered from POs and team members.</p>
+                
+                 <div class="mb-6 max-w-md">
+                    <label for="surveySelector" class="block text-sm font-medium text-gray-700 mb-2">Select a Survey to View:</label>
+                    <select id="surveySelector" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-pink-500 focus:border-pink-500 bg-white">
+                        <option value="po_short_pref">PO Preference Survey (Short)</option>
+                        <option value="po_detailed_pref">PO Preference Survey (Detailed)</option>
+                        <option value="team_short_pref">Team Preference Survey (Short)</option>
+                        <option value="team_detailed_pref">Team Preference Survey (Detailed)</option>
+                    </select>
+                </div>
+
+                <div id="survey-display" class="space-y-4">
+                </div>
+            </section>
+            
+            <section id="communication" class="content-section hidden">
+                <h2 class="text-4xl font-bold text-pink-900/80 mb-4">Team Communication Guide</h2>
+                 <p class="text-lg text-slate-600 mb-8 max-w-4xl">Successfully rolling out a preference survey to the wider team requires careful and empathetic communication, especially given sensitivities around job security. This section provides the key principles and a template message to ensure the initiative's positive intent is clearly understood.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200/80">
+                         <h3 class="text-2xl font-semibold text-slate-800 mb-4">Key Communication Principles</h3>
+                         <ul class="space-y-4 text-slate-600 list-disc list-inside">
+                            <li><strong class="font-semibold text-slate-700">Emphasize Positive Intent:</strong> Frame the survey as an investment in professional growth and well-being.</li>
+                            <li><strong class="font-semibold text-slate-700">Dispel Job Security Concerns:</strong> State explicitly that it is not for performance evaluation or staffing decisions.</li>
+                             <li><strong class="font-semibold text-slate-700">Highlight Anonymity:</strong> Reassure team members that responses are anonymous and will be used in aggregate to build trust.</li>
+                            <li><strong class="font-semibold text-slate-700">Focus on Better Projects:</strong> Explain the goal is to create teams with shared interests for more enjoyable, successful projects.</li>
+                            <li><strong class="font-semibold text-slate-700">Provide Context & Empathy:</strong> Explain how this benefits them directly by leading to more fulfilling work.</li>
+                        </ul>
+                    </div>
+                     <div class="bg-slate-800 text-slate-200 p-8 rounded-xl shadow-lg font-mono text-sm">
+                        <h3 class="text-2xl font-semibold text-white mb-4 font-sans">Suggested Email Template</h3>
+                        <p class="text-slate-400 mb-4"><strong class="text-white">Subject:</strong> Your Voice Matters: Shaping Our Future Projects and Team Experiences!</p>
+                        <p class="mb-4">Hi Team,</p>
+                        <p class="mb-4">We're excited to launch a new initiative aimed at making our project assignments even more engaging and fulfilling for everyone. To help us, we're asking for your valuable input through a short survey about your project preferences and interests.</p>
+                        <p class="mb-4 text-pink-300">The goal of this survey is purely to help us create the most effective and enjoyable project teams possible. It's about aligning your skills and passions with upcoming projects. <strong class="underline">This survey is NOT for performance evaluation, job security assessment, or any staffing reduction decisions.</strong></p>
+                         <p>Your feedback is completely anonymous. Please take a few moments to complete it. Your insights are invaluable.</p>
+                         <p class="mt-4">Thank you!</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="recommendations" class="content-section hidden">
+                <h2 class="text-4xl font-bold text-pink-900/80 mb-4">Conclusion & Recommendations</h2>
+                 <p class="text-lg text-slate-600 mb-8 max-w-4xl">Implementing this framework offers a strategic path to optimizing the company’s structure through data-driven matchmaking. By systematically evaluating capabilities and aligning them with interests, the company can expect improved project fit, enhanced team dynamics, and a higher probability of delivering successful games.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/80">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-2">1. Phased Rollout</h3>
+                        <p class="text-slate-600">Begin with short surveys for quick, high-level data. Use detailed surveys for new candidates or critical pipeline assignments.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/80">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-2">2. Integrate with Reviews</h3>
+                        <p class="text-slate-600">Incorporate capability scoring into regular performance reviews to create a continuous feedback loop and support professional development.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/80">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-2">3. Data Analysis</h3>
+                        <p class="text-slate-600">Develop a systematic approach or simple algorithm to process survey data, generating a "fit score" for each person-project combination.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200/80">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-2">4. Iterative Refinement</h3>
+                        <p class="text-slate-600">Gather feedback from teams post-assignment to refine the framework, criteria, and survey questions over time.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const mainContent = document.getElementById('main-content');
+    const navLinks = document.querySelectorAll('#sidebar .nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
+    
+    const capabilitiesData = [
+        { name: 'Vision & Strategy', desc: 'Ability to articulate product vision, strategic goals, and roadmap to all stakeholders, ensuring alignment.', good: 'Consistently articulates a clear, inspiring product vision. Proactively communicates changes and rationale to all stakeholders, ensuring transparency and buy-in.', bad: 'Struggles to articulate a coherent product vision, leading to team confusion and misalignment. Fails to communicate changes effectively, resulting in rework.' },
+        { name: 'Backlog Management', desc: 'Skill in developing, refining, and ordering the product backlog to maximize value, making trade-offs across scope, budget, and time.', good: 'Expertly manages and prioritizes the backlog. Effectively juggles scope, budget, and time, making informed trade-offs and communicating them clearly.', bad: 'Backlog is disorganized or unclear. Struggles to prioritize effectively, resulting in scope creep, budget overruns, or missed deadlines.' },
+        { name: 'Stakeholder & Client', desc: 'Capacity to identify, engage, and manage expectations of diverse internal and external stakeholders.', good: 'Proactively engages with all stakeholders to understand needs, manage expectations, and build strong, trusting relationships. Effectively mediates conflicting requirements.', bad: 'Struggles to manage stakeholder expectations, leading to frequent misunderstandings or dissatisfaction. Fails to address conflicting requirements.' },
+        { name: 'Analytical & Decision-Making', desc: 'Ability to analyze complex information and data to make timely, logical, and informed decisions.', good: 'Consistently makes data-driven, logical decisions. Quickly researches issues to identify viable solutions and accurately forecasts delivery timelines.', bad: 'Makes decisions based on assumptions or incomplete data, leading to suboptimal outcomes. Struggles with critical thinking or data analysis.' },
+        { name: 'Team Collaboration', desc: 'Capacity to foster a collaborative, transparent, and motivated environment within the development pipeline.', good: 'Acts as a strong liaison, fostering open communication and shared accountability. Is highly accessible to the team, providing clear requirements and removing impediments.', bad: 'Creates friction or misunderstanding due to unclear communication or lack of accessibility. Fails to foster a collaborative environment.' },
+        { name: 'Technical Acumen', desc: 'Understanding of game development processes, technical constraints, and terminology to engage effectively with the team.', good: 'Demonstrates a solid understanding of technical processes, enabling effective communication. Accurately assesses technical feasibility and contributes to realistic estimation.', bad: 'Lacks sufficient technical understanding, leading to friction with the dev team or unrealistic expectations. Struggles to understand technical constraints.' }
+    ];
+
+    const poProfiles = {
+        balanced: [4, 4, 4, 4, 4, 3],
+        strategic: [5, 4, 5, 5, 3, 2],
+        execution: [3, 5, 4, 4, 4, 4],
+        people: [4, 4, 5, 3, 5, 2]
+    };
+    
+    const surveys = {
+        po_short_pref: [
+            { q: "Which of the following game genres are you most passionate about or have significant experience with? (Select up to 3)", type: "multiple-choice", options: ["Action-Adventure", "RPG", "Strategy", "Simulation", "Puzzle", "Casual", "MMO"] },
+            { q: "Which platform(s) do you have the most experience developing for or are most interested in? (Select all that apply)", type: "multi-select", options: ["PC", "Console", "Mobile", "VR/AR", "Web"] },
+            { q: "What is your preferred project scale in terms of core development team size?", type: "multiple-choice", options: ["Small (5-15)", "Medium (16-40)", "Large (40+)"] },
+            { q: "Which phases of game development do you find most engaging?", type: "multi-select", options: ["Concept/Pre-production", "Alpha/Feature Dev", "Beta/Content Polish", "Live Operations"] },
+            { q: "Which monetization models are you most familiar with?", type: "multi-select", options: ["Premium", "F2P with IAPs", "Subscription", "Ad-supported"] },
+            { q: "What level of creative autonomy do you typically prefer in a project?", type: "likert", scale: ["Strictly execute", "Some influence", "High creative influence"] }
+        ],
+        po_detailed_pref: [
+            { q: "Which of the following game genres are you most passionate about or have significant experience with? (Select up to 3)", type: "multiple-choice", options: ["Action-Adventure", "RPG", "Strategy", "Simulation", "Puzzle", "Casual", "MMO"] },
+            { q: "Are there any specific art styles or thematic aesthetics you are particularly passionate about or have significant experience with? Please describe.", type: "open-text", placeholder: "e.g., Realistic, Stylized, Pixel Art, Sci-Fi..." },
+            { q: "What types of clients (e.g., large publishers, indie studios) have you most enjoyed working with, and why?", type: "open-text", placeholder: "Describe your experience and preferences..." },
+            { q: "Are there any specific areas within game development or product ownership where you are actively seeking to develop new skills?", type: "open-text", placeholder: "e.g., Deepen F2P monetization, gain VR experience..." },
+            { q: "Describe your ideal work environment in terms of pace, flexibility, and intensity.", type: "multiple-choice", options: ["Fast-paced & intense", "Moderate & consistent", "Flexible & adaptive"] },
+             { q: "Are there any specific game genres or platforms you would prefer *not* to work on, and why?", type: "open-text", placeholder: "Your thoughts here..." }
+        ],
+        team_short_pref: [
+             { q: "Which of the following game genres are you most passionate about working on? (Select up to 3)", type: "multiple-choice", options: ["Action-Adventure", "RPG", "Strategy", "Simulation", "Puzzle", "Casual", "MMO"] },
+             { q: "Which platform(s) are you most interested in developing for?", type: "multi-select", options: ["PC", "Console", "Mobile", "VR/AR", "Web"] },
+             { q: "What is your preferred project scale in terms of core development team size?", type: "multiple-choice", options: ["Small (5-15)", "Medium (16-40)", "Large (40+)"] },
+             { q: "How much creative input do you prefer to have in your projects?", type: "likert", scale: ["Execute tasks", "Some input", "Significant influence"] },
+             { q: "Which phases of game development do you find most engaging?", type: "multi-select", options: ["Concept/Pre-production", "Alpha/Feature Dev", "Beta/Content Polish", "Live Operations"] },
+             { q: "How important is it for you to work with a team that shares similar interests?", type: "likert", scale: ["Not important", "Somewhat", "Very important"] }
+        ],
+        team_detailed_pref: [
+            { q: "Which game genres are you most passionate about working on? (Select up to 3)", type: "multiple-choice", options: ["Action-Adventure", "RPG", "Strategy", "Simulation", "Puzzle", "Casual", "MMO"] },
+            { q: "What game engines, software, or technologies are you comfortable with or eager to learn?", type: "open-text", placeholder: "e.g., Unity, Unreal, Blender, C++, Python..." },
+            { q: "Describe your ideal team environment and collaboration style. What helps you do your best work?", type: "open-text", placeholder: "e.g., Collaborative brainstorming, clear tasks..." },
+            { q: "Are there specific areas within game development (e.g., AI, multiplayer, UI/UX) where you are seeking to develop new skills?", type: "open-text", placeholder: "Describe your learning goals..." },
+            { q: "Describe your ideal work environment in terms of pace and flexibility.", type: "multiple-choice", options: ["Fast-paced & intense", "Moderate & consistent", "Flexible & adaptive"] },
+            { q: "Are there any specific game genres or project types you would prefer *not* to work on, and why?", type: "open-text", placeholder: "Your thoughts here..." }
+        ]
+    };
+    
+    function navigate(hash) {
+        if (!hash) hash = '#overview';
+
+        contentSections.forEach(section => {
+            if ('#' + section.id === hash) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        });
+
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === hash) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        mainContent.scrollTop = 0;
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const hash = this.getAttribute('href');
+            window.location.hash = hash;
+        });
+    });
+
+    window.addEventListener('hashchange', () => navigate(window.location.hash));
+    
+    let capabilitiesChart;
+    function initCapabilitiesChart() {
+        const ctx = document.getElementById('capabilitiesChart').getContext('2d');
+        const labels = capabilitiesData.map(c => c.name);
+        capabilitiesChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'PO Capability Score',
+                    data: poProfiles.balanced,
+                    backgroundColor: 'rgba(219, 39, 119, 0.2)',
+                    borderColor: 'rgba(219, 39, 119, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(219, 39, 119, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(219, 39, 119, 1)'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        pointLabels: {
+                            font: { size: 12 },
+                             callback: function(label) {
+                                if (label.length > 15) {
+                                    return label.split(' '); 
+                                }
+                                return label;
+                            }
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            max: 5,
+                            stepSize: 1,
+                            backdropColor: 'rgba(255, 255, 255, 0.75)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const poProfileSelector = document.getElementById('poProfileSelector');
+    if (poProfileSelector) {
+        poProfileSelector.addEventListener('change', function() {
+            const selectedProfile = this.value;
+            capabilitiesChart.data.datasets[0].data = poProfiles[selectedProfile];
+            capabilitiesChart.update();
+        });
+    }
+
+    function populateCapabilities() {
+        const list = document.getElementById('capabilities-list');
+        if(!list) return;
+        list.innerHTML = '';
+        capabilitiesData.forEach(cap => {
+            const card = document.createElement('div');
+            card.className = 'capability-card bg-white rounded-xl shadow-md border border-slate-200/80 p-5 cursor-pointer hover:shadow-lg hover:border-pink-300';
+            card.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <h4 class="text-lg font-semibold text-slate-800">${cap.name}</h4>
+                    <span class="text-pink-500 transform transition-transform">▼</span>
+                </div>
+                <div class="details mt-4 pt-4 border-t border-slate-200">
+                    <p class="text-slate-600 mb-4">${cap.desc}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                            <h5 class="font-semibold text-green-800 mb-1">✓ Good</h5>
+                            <p class="text-sm text-green-700">${cap.good}</p>
+                        </div>
+                         <div class="bg-red-50 p-3 rounded-lg border border-red-200">
+                            <h5 class="font-semibold text-red-800 mb-1">✗ Bad</h5>
+                            <p class="text-sm text-red-700">${cap.bad}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => {
+                 const wasOpen = card.classList.contains('open');
+                 document.querySelectorAll('.capability-card.open').forEach(c => c.classList.remove('open'));
+                 if (!wasOpen) {
+                    card.classList.add('open');
+                 }
+            });
+            list.appendChild(card);
+        });
+    }
+    
+    const surveySelector = document.getElementById('surveySelector');
+    const surveyDisplay = document.getElementById('survey-display');
+
+    function renderSurvey(surveyKey) {
+        if(!surveyDisplay) return;
+        surveyDisplay.innerHTML = '';
+        const surveyData = surveys[surveyKey];
+        if (!surveyData) return;
+
+        surveyData.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-xl shadow-md border border-slate-200/80 question-card-enter';
+            card.style.animationDelay = `${index * 100}ms`;
+
+            let optionsHtml = '';
+            if (item.type === 'multiple-choice') {
+                optionsHtml = `<div class="mt-4 space-y-2">${item.options.map(opt => `<label class="flex items-center text-slate-700"><input type="radio" name="q${index}" class="h-4 w-4 text-pink-600 border-gray-300 focus:ring-pink-500" disabled><span class="ml-3">${opt}</span></label>`).join('')}</div>`;
+            } else if (item.type === 'multi-select') {
+                optionsHtml = `<div class="mt-4 space-y-2">${item.options.map(opt => `<label class="flex items-center text-slate-700"><input type="checkbox" name="q${index}" class="h-4 w-4 rounded text-pink-600 border-gray-300 focus:ring-pink-500" disabled><span class="ml-3">${opt}</span></label>`).join('')}</div>`;
+            } else if (item.type === 'likert') {
+                 optionsHtml = `<div class="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-slate-600">
+                    <span>${item.scale[0]}</span>
+                    <div class="flex space-x-2">${Array.from({length: item.scale.length === 3 ? 5 : item.scale.length}, (_, i) => `<input type="radio" name="q${index}" class="h-5 w-5 text-pink-600 border-gray-300 focus:ring-pink-500" disabled>`).join('')}</div>
+                    <span>${item.scale[item.scale.length - 1]}</span>
+                </div>`;
+            } else if (item.type === 'open-text') {
+                optionsHtml = `<div class="mt-4"><textarea class="w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="${item.placeholder}" disabled></textarea></div>`;
+            }
+            
+            card.innerHTML = `
+                <p class="font-semibold text-slate-800">${index + 1}. ${item.q}</p>
+                ${optionsHtml}
+            `;
+            surveyDisplay.appendChild(card);
+        });
+    }
+
+    if (surveySelector) {
+        surveySelector.addEventListener('change', (e) => renderSurvey(e.target.value));
+        renderSurvey(surveySelector.value);
+    }
+    
+    initCapabilitiesChart();
+    populateCapabilities();
+    navigate(window.location.hash || '#overview');
+});
+</script>
+
+</body>
+</html>
