@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The AI Revolution in Game Animation</title>
+    <!-- Chosen Palette: Warm Neutrals - Alabaster, Taupe Gray, Cadet Blue, Gunmetal -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive dashboard with a sticky top navigation to allow users to explore non-linearly. The structure is thematic: 1) A high-level Overview of AI's benefits, 2) An interactive Tool Explorer with filtering to allow users to query specific tools, 3) A comparative Industry Impact section (AAA vs. Indie) for direct analysis, and 4) A tabbed Future & Challenges section to present a balanced view. This structure breaks down the dense report into manageable, user-driven segments, prioritizing discoverability and comprehension over the original linear format. -->
+    <!-- Visualization & Content Choices: 1) Report Info: AI Benefits -> Goal: Inform -> Method: Highlighted stat cards for scannability. 2) Report Info: AI vs Traditional Speed -> Goal: Compare -> Viz: Bar Chart (Chart.js) to visually contrast development timelines. 3) Report Info: Tool Details -> Goal: Organize/Inform -> Method: Interactive filterable cards (JS) to allow users to sort tools by category, making a large dataset explorable. 4) Report Info: Tool Categories -> Goal: Inform -> Viz: Donut Chart (Chart.js) to show the distribution of tool types discussed. 5) Report Info: AAA vs Indie Impact -> Goal: Compare -> Method: Side-by-side text comparison and a Polar Area Chart (Chart.js) to contrast priorities. This combination of text and visuals provides multiple ways to understand the content. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F0EAD6; /* Alabaster - Warm Neutral */
+            color: #3D3D3D; /* Gunmetal */
+        }
+        .nav-link {
+            transition: color 0.3s ease, border-color 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #5F9EA0; /* Cadet Blue */
+            border-bottom-color: #5F9EA0;
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            background-color: #5F9EA0; /* Cadet Blue */
+            color: #FFFFFF;
+        }
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #EAEAEA;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background-color: #8C7D70; /* Taupe Gray */
+            color: #FFFFFF;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        /* Modal for LLM responses */
+        .llm-modal {
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .llm-modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">AI in Game Animation</h1>
+            <div class="hidden md:flex items-center space-x-8 text-gray-600 font-semibold">
+                <a href="#overview" class="nav-link px-2 py-1">Overview</a>
+                <a href="#explorer" class="nav-link px-2 py-1">Tool Explorer</a>
+                <a href="#impact" class="nav-link px-2 py-1">Industry Impact</a>
+                <a href="#future" class="nav-link px-2 py-1">Future & Challenges</a>
+            </div>
+             <button id="mobile-menu-button" class="md:hidden p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500">
+                <div class="w-6 h-0.5 bg-gray-600 mb-1"></div>
+                <div class="w-6 h-0.5 bg-gray-600 mb-1"></div>
+                <div class="w-6 h-0.5 bg-gray-600"></div>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#overview" class="block py-2 text-gray-600 font-semibold">Overview</a>
+            <a href="#explorer" class="block py-2 text-gray-600 font-semibold">Tool Explorer</a>
+            <a href="#impact" class="block py-2 text-gray-600 font-semibold">Industry Impact</a>
+            <a href="#future" class="block py-2 text-gray-600 font-semibold">Future & Challenges</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <!-- Section 1: Overview -->
+        <section id="overview" class="mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4">A Paradigm Shift in Animation</h2>
+            <p class="max-w-3xl mx-auto text-center text-lg text-gray-700 mb-12">
+                This section provides a high-level overview of how Artificial Intelligence is revolutionizing game animation. Explore the core benefits driving this transformation and see a visual comparison of how AI accelerates development cycles compared to traditional methods. This sets the stage for understanding the tools and trends shaping the industry's future.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+                <div class="card p-6 text-center">
+                    <div class="text-4xl mb-3">⏱️</div>
+                    <h3 class="font-bold text-xl mb-2">Efficiency</h3>
+                    <p class="text-gray-600">AI automates repetitive tasks, shortening development cycles by up to 30% and freeing up creators to focus on gameplay and storytelling.</p>
+                </div>
+                <div class="card p-6 text-center">
+                    <div class="text-4xl mb-3">🎨</div>
+                    <h3 class="font-bold text-xl mb-2">Realism</h3>
+                    <p class="text-gray-600">Enables lifelike movements, nuanced facial expressions, and physics-driven interactions for more immersive player experiences.</p>
+                </div>
+                <div class="card p-6 text-center">
+                     <div class="text-4xl mb-3">🌍</div>
+                    <h3 class="font-bold text-xl mb-2">Accessibility</h3>
+                    <p class="text-gray-600">Democratizes content creation, allowing smaller studios to achieve AAA-quality animation without massive budgets or teams.</p>
+                </div>
+                 <div class="card p-6 text-center">
+                    <div class="text-4xl mb-3">💡</div>
+                    <h3 class="font-bold text-xl mb-2">Creativity</h3>
+                    <p class="text-gray-600">Opens new possibilities with dynamic, adaptive worlds and narratives that respond intelligently to player actions.</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-center mb-2">AI's Impact on Development Speed</h3>
+                 <p class="text-center text-gray-600 mb-6">This chart illustrates the potential time savings on animation tasks when using AI-assisted tools versus traditional keyframing and mocap workflows. Note that units are for relative comparison.</p>
+                <div class="chart-container h-80 md:h-96">
+                    <canvas id="speedChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Tool Explorer -->
+        <section id="explorer" class="mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4">AI Animation Tool Explorer</h2>
+            <p class="max-w-3xl mx-auto text-center text-lg text-gray-700 mb-12">
+                Dive into the ecosystem of AI tools transforming game animation. This interactive explorer allows you to filter tools based on their primary function. Click a category to see the relevant software, its key features, and which studios are using it. The chart provides a visual breakdown of the tool types covered in this report.
+            </p>
+
+             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-bold text-center mb-4">Filter by Category</h3>
+                    <div id="tool-filters" class="flex flex-wrap justify-center gap-3">
+                        <button class="filter-btn active px-4 py-2 bg-gray-200 rounded-full font-semibold" data-filter="all">All</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 rounded-full font-semibold" data-filter="mocap">Motion Capture</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 rounded-full font-semibold" data-filter="posing">Posing & Physics</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 rounded-full font-semibold" data-filter="generative">Generative AI</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 rounded-full font-semibold" data-filter="procedural">Procedural Animation</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col justify-center items-center">
+                     <h3 class="text-xl font-bold text-center mb-2">Tool Categories</h3>
+                    <div class="chart-container !h-48 !md:h-64">
+                         <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tool-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Tool cards will be injected here by JavaScript -->
+            </div>
+        </section>
+        
+        <!-- Section 3: Industry Impact -->
+        <section id="impact" class="mb-24">
+            <h2 class="text-3xl font-bold text-center mb-4">Industry Impact: AAA vs. Indie</h2>
+            <p class="max-w-3xl mx-auto text-center text-lg text-gray-700 mb-12">
+                AI's influence is not uniform across the game development landscape. This section provides a direct comparison of how large AAA studios and smaller independent developers are adopting and benefiting from AI animation tools. The chart visually contrasts their primary motivations and areas of focus.
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="card p-6">
+                        <h3 class="text-2xl font-bold mb-4 text-center">🏆 AAA Studios</h3>
+                        <ul class="space-y-3 text-gray-700 list-disc list-inside">
+                            <li><strong>Pushing Realism:</strong> Leveraging AI for photorealistic digital humans (MetaHuman) and hyper-realistic NPC behaviors.</li>
+                            <li><strong>Efficiency at Scale:</strong> Streamlining massive production pipelines for huge open-world games.</li>
+                            <li><strong>Dynamic Experiences:</strong> Creating autonomous characters that learn and react in real-time (NVIDIA ACE).</li>
+                            <li><strong>Performance Boost:</strong> Using neural rendering (DLSS) to maximize visual quality and frame rates.</li>
+                        </ul>
+                    </div>
+                     <div class="card p-6">
+                        <h3 class="text-2xl font-bold mb-4 text-center">🎮 Indie Developers</h3>
+                         <ul class="space-y-3 text-gray-700 list-disc list-inside">
+                            <li><strong>Bridging the Gap:</strong> Accessing once-prohibitive mocap technology via affordable, markerless solutions.</li>
+                            <li><strong>Accelerating Workflow:</strong> Dramatically reducing time spent on manual keyframing to focus on core gameplay.</li>
+                            <li><strong>Cost-Effective Quality:</strong> Achieving studio-quality results with minimal investment in hardware or specialized staff.</li>
+                            <li><strong>Creative Freedom:</strong> Experimenting with polished visuals and complex animations previously out of reach.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                    <h3 class="text-xl font-bold text-center mb-2">Comparing Studio Priorities</h3>
+                    <p class="text-center text-gray-600 mb-4">This chart shows the relative importance of different AI benefits for AAA and Indie studios.</p>
+                    <div class="chart-container h-80">
+                         <canvas id="impactChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Future & Challenges -->
+        <section id="future">
+             <h2 class="text-3xl font-bold text-center mb-4">The Road Ahead</h2>
+            <p class="max-w-3xl mx-auto text-center text-lg text-gray-700 mb-12">
+                The integration of AI in animation is still evolving. This final section explores what's next, from emerging technological trends to the critical challenges the industry must navigate. Use the tabs to switch between a look at the future horizons and an overview of the ethical and technical hurdles.
+            </p>
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex justify-center border-b border-gray-200 mb-6">
+                    <button class="tab-btn active px-6 py-3 font-semibold" data-tab="horizons">Future Horizons</button>
+                    <button class="tab-btn px-6 py-3 font-semibold" data-tab="challenges">Challenges</button>
+                    <button id="brainstorm-solutions-btn" class="px-4 py-2 bg-blue-500 text-white rounded-full font-semibold hover:bg-blue-600 transition-colors duration-200 ml-4">✨ Brainstorm AI Solutions</button>
+                </div>
+
+                <div id="horizons" class="tab-content">
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-4 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2">Neural Rendering</h4>
+                            <p class="text-gray-600">AI will generate textures, lighting, and entire worlds in real-time, moving beyond simple upscaling to full synthesis.</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2">Emotional AI</h4>
+                            <p class="text-gray-600">NPCs will exhibit complex emotions and adapt their behavior based on nuanced interactions with the player.</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-gray-50">
+                            <h4 class="font-bold text-lg mb-2">Adaptive Storytelling</h4>
+                            <p class="text-gray-600">Narratives will shift dynamically based on player choices, creating truly personalized and replayable experiences.</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="challenges" class="tab-content hidden">
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-4 rounded-lg bg-red-50 border border-red-200">
+                            <h4 class="font-bold text-lg mb-2">Data & Quality</h4>
+                            <p class="text-gray-600">AI model effectiveness is limited by the quality and breadth of training data, which can lead to biased or inconsistent results.</p>
+                        </div>
+                        <div class="p-4 rounded-lg bg-red-50 border border-red-200">
+                            <h4 class="font-bold text-lg mb-2">Ethical & Legal</h4>
+                            <p class="text-gray-600">Complex questions around copyright for AI-generated content and the potential for job displacement for human artists.</p>
+                        </div>
+                         <div class="p-4 rounded-lg bg-red-50 border border-red-200">
+                            <h4 class="font-bold text-lg mb-2">Technical Demands</h4>
+                            <p class="text-gray-600">Integrating AI into pipelines is complex and requires significant computational power, especially for real-time performance.</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="solutions-output" class="mt-8 p-6 bg-gray-50 rounded-lg hidden">
+                    <h3 class="font-bold text-xl mb-4">✨ Brainstormed Solutions & Innovations:</h3>
+                    <div id="solutions-text" class="text-gray-700 leading-relaxed"></div>
+                    <div id="solutions-loading" class="text-center text-gray-500 hidden">Loading...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto px-6 py-4 text-center">
+            <p>&copy; 2024 Interactive Report. All data synthesized from the source document.</p>
+        </div>
+    </footer>
+
+    <!-- LLM Modal -->
+    <div id="llm-modal" class="llm-modal hidden">
+        <div class="llm-modal-content">
+            <span class="close-button" id="close-llm-modal">&times;</span>
+            <h3 id="llm-modal-title" class="font-bold text-xl mb-4"></h3>
+            <div id="llm-modal-body" class="text-gray-700 leading-relaxed"></div>
+            <div id="llm-modal-loading" class="text-center text-gray-500 hidden mt-4">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Gemini API Setup
+            const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='; // API key will be provided by Canvas runtime
+
+            async function callGeminiAPI(prompt, outputElement, loadingElement) {
+                outputElement.innerHTML = '';
+                loadingElement.classList.remove('hidden');
+                outputElement.classList.add('hidden');
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        outputElement.innerHTML = text.replace(/\n/g, '<br>');
+                        outputElement.classList.remove('hidden');
+                    } else {
+                        outputElement.innerHTML = 'Sorry, I could not generate a response. Please try again.';
+                        outputElement.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    outputElement.innerHTML = 'An error occurred while fetching the response. Please try again later.';
+                    outputElement.classList.remove('hidden');
+                } finally {
+                    loadingElement.classList.add('hidden');
+                }
+            }
+
+            // Data for Tools
+            const toolsData = [
+                { name: 'DeepMotion', category: 'mocap', features: ['Text-to-Animation (SayMotion)', 'Video-to-Animation (Animate 3D)', 'Face & Hand Tracking', 'Physics Simulation'], users: 'Memik Inc., Corridor Digital, UTS Animal Logic Academy, Roblox creators' },
+                { name: 'Rokoko Vision', category: 'mocap', features: ['Free markerless mocap', 'Webcam or video upload', 'Integrates with Rokoko Studio', 'Dual-camera support for accuracy'], users: 'Bad Decisions Studio, James Luke, "Praey for the Gods"' },
+                { name: 'Remocapp', category: 'mocap', features: ['Real-time markerless mocap', 'Designed for indie developers', 'Uses standard webcams', 'Direct Unity/Unreal integration'], users: 'Indie game projects' },
+                { name: 'Cascadeur', category: 'posing', features: ['AI AutoPosing & AutoPhysics', 'Quick Rigging tool', 'Standalone 3D keyframe software', 'Video Mocap feature'], users: 'Indie studio for "Crowned in Steel"' },
+                { name: 'MetaHuman Creator', category: 'generative', features: ['Photorealistic digital humans in minutes', 'Fully rigged for mocap (ARKit)', 'Integrated with Unreal Engine 5', 'Free for Unreal Engine users'], users: 'Epic Games ("Hellblade II")' },
+                { name: 'NVIDIA ACE', category: 'generative', features: ['Autonomous AI characters', 'Real-time speech-to-facial animation', 'Suite of AI models (speech, vision)', 'NVIGI SDK for C++ integration'], users: 'KRAFTON ("inZOI"), Wemade Next ("MIR5")' },
+                { name: 'Krikey AI', category: 'generative', features: ['Text or video to animation', 'Custom character creation', 'Sprite sheet animation', 'Interoperable with Unity/Unreal'], users: 'Alexa Games team' },
+                { name: 'Ailive Inc. (Genaimo)', category: 'generative', features: ['Text, video, or music to 3D animation', 'Motion styling & enhancement', 'B2B API solution available', 'Automatic retargeting'], users: 'AAA studios and publishers in NA, EU, East Asia' },
+                { name: 'Unity AI', category: 'procedural', features: ['Muse Animate (text-to-animation)', 'Muse Behavior (AI behavior trees)', 'Integrated into Unity Editor', 'Generators for sprites, textures'], users: 'Wide range of games developed with Unity' },
+                { name: 'Rosebud AI', category: 'procedural', features: ['Generates game code and assets from prompts', 'AI-driven narratives & world-building', 'Sprite animation creation', 'Empowers NPCs with intelligent reactions'], users: 'Non-game developers, indie creators' },
+            ];
+
+            // LLM Modal Elements
+            const llmModal = document.getElementById('llm-modal');
+            const closeLlmModalBtn = document.getElementById('close-llm-modal');
+            const llmModalTitle = document.getElementById('llm-modal-title');
+            const llmModalBody = document.getElementById('llm-modal-body');
+            const llmModalLoading = document.getElementById('llm-modal-loading');
+
+            closeLlmModalBtn.addEventListener('click', () => {
+                llmModal.classList.add('hidden');
+            });
+            window.addEventListener('click', (event) => {
+                if (event.target == llmModal) {
+                    llmModal.classList.add('hidden');
+                }
+            });
+
+            // Tool Explorer Logic
+            const toolGrid = document.getElementById('tool-grid');
+            const filterButtons = document.querySelectorAll('#tool-filters .filter-btn');
+
+            const renderTools = (filter) => {
+                toolGrid.innerHTML = '';
+                const filteredTools = (filter === 'all') ? toolsData : toolsData.filter(tool => tool.category === filter);
+
+                filteredTools.forEach(tool => {
+                    const toolCard = document.createElement('div');
+                    toolCard.className = 'card p-6 flex flex-col';
+                    toolCard.innerHTML = `
+                        <h3 class="font-bold text-xl mb-2">${tool.name}</h3>
+                        <div class="mb-4">
+                            <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                                ${tool.category.replace(/^\w/, c => c.toUpperCase())}
+                            </span>
+                        </div>
+                        <p class="font-semibold text-gray-800 mb-2">Key Features:</p>
+                        <ul class="text-gray-600 space-y-1 list-disc list-inside mb-4 flex-grow">
+                            ${tool.features.map(f => `<li>${f}</li>`).join('')}
+                        </ul>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1">Known Users:</p>
+                            <p class="text-sm text-gray-500 mb-4">${tool.users}</p>
+                        </div>
+                        <button class="suggest-use-case-btn mt-auto px-4 py-2 bg-purple-500 text-white rounded-full font-semibold hover:bg-purple-600 transition-colors duration-200">✨ Suggest Use Case</button>
+                    `;
+                    toolGrid.appendChild(toolCard);
+                });
+
+                // Attach event listeners to new buttons
+                document.querySelectorAll('.suggest-use-case-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const card = event.target.closest('.card');
+                        const toolName = card.querySelector('h3').textContent;
+                        const toolFeatures = Array.from(card.querySelectorAll('ul li')).map(li => li.textContent).join(', ');
+                        const prompt = `Suggest a creative and specific game development use case for the AI animation tool "${toolName}" with these features: ${toolFeatures}. Focus on how it benefits animation workflows.`;
+                        
+                        llmModalTitle.textContent = `Use Case for ${toolName}`;
+                        llmModal.classList.remove('hidden');
+                        await callGeminiAPI(prompt, llmModalBody, llmModalLoading);
+                    });
+                });
+            };
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    renderTools(button.dataset.filter);
+                });
+            });
+
+            // Initial render
+            renderTools('all');
+
+            // Brainstorm AI Solutions Button Logic
+            const brainstormSolutionsBtn = document.getElementById('brainstorm-solutions-btn');
+            const solutionsOutput = document.getElementById('solutions-output');
+            const solutionsText = document.getElementById('solutions-text');
+            const solutionsLoading = document.getElementById('solutions-loading');
+
+            brainstormSolutionsBtn.addEventListener('click', async () => {
+                solutionsOutput.classList.remove('hidden');
+                const horizons = Array.from(document.querySelectorAll('#horizons h4')).map(h => h.textContent).join(', ');
+                const challenges = Array.from(document.querySelectorAll('#challenges h4')).map(h => h.textContent).join(', ');
+                const prompt = `Based on the following future horizons and challenges in AI game animation:
+                Horizons: ${horizons}
+                Challenges: ${challenges}
+
+                Please brainstorm innovative solutions, breakthrough ideas, or strategies to overcome these challenges and achieve the stated horizons. Provide concrete examples where possible.`;
+                
+                await callGeminiAPI(prompt, solutionsText, solutionsLoading);
+            });
+
+
+            // Tab Logic
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        if(content.id === button.dataset.tab) {
+                            content.classList.remove('hidden');
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            
+            // Navigation Active State on Scroll
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Charts
+            const chartFontColor = '#3D3D3D';
+
+            // Speed Chart
+            new Chart(document.getElementById('speedChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Character Rigging', 'Basic Locomotion Cycle', 'Complex Combat Animation', 'Facial Expression Sync'],
+                    datasets: [
+                        {
+                            label: 'Traditional Methods',
+                            data: [100, 40, 120, 80],
+                            backgroundColor: '#8C7D70', // Taupe Gray
+                            borderColor: '#6F6155',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'AI-Assisted Methods',
+                            data: [20, 5, 50, 15],
+                            backgroundColor: '#5F9EA0', // Cadet Blue
+                            borderColor: '#4A7C7D',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: chartFontColor } },
+                        title: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} arbitrary units`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Relative Development Time', color: chartFontColor },
+                            ticks: { color: chartFontColor }
+                        },
+                        x: { ticks: { color: chartFontColor } }
+                    }
+                }
+            });
+
+            // Category Chart
+            const categoryCounts = toolsData.reduce((acc, tool) => {
+                acc[tool.category] = (acc[tool.category] || 0) + 1;
+                return acc;
+            }, {});
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryCounts).map(k => k.replace(/^\w/, c => c.toUpperCase())),
+                    datasets: [{
+                        label: 'Tool Categories',
+                        data: Object.values(categoryCounts),
+                        backgroundColor: ['#5F9EA0', '#8C7D70', '#A9A9A9', '#BDB76B'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: chartFontColor,
+                                boxWidth: 12,
+                                padding: 15,
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Impact Chart
+            new Chart(document.getElementById('impactChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: ['Enhancing Realism', 'Efficiency at Scale', 'Accessibility', 'Creative Freedom', 'Cost Reduction'],
+                    datasets: [
+                        {
+                            label: 'AAA Studios',
+                            data: [5, 5, 2, 3, 2],
+                            backgroundColor: 'rgba(95, 158, 160, 0.5)' // Cadet Blue
+                        },
+                        {
+                            label: 'Indie Developers',
+                            data: [3, 4, 5, 4, 5],
+                            backgroundColor: 'rgba(140, 125, 112, 0.5)' // Taupe Gray
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: chartFontColor } }
+                    },
+                    scales: {
+                        r: {
+                            pointLabels: { font: { size: 10 }, color: chartFontColor },
+                            ticks: { backdropColor: 'transparent', color: chartFontColor }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
